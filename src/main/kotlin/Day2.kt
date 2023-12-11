@@ -32,7 +32,7 @@ private val blueRegex = """(\d+) blue""".toRegex()
 private fun String.parseGameId(): Int =
     gameIdRegex.find(this)?.groupValues?.get(1)?.toIntOrNull() ?: error("failed to parse game ID")
 
-private data class Game(val red: Int = 0, val green: Int = 0, val blue: Int = 0){
+private data class RgbGame(val red: Int = 0, val green: Int = 0, val blue: Int = 0){
     val power: Int
         get() = red * green * blue
 
@@ -40,14 +40,14 @@ private data class Game(val red: Int = 0, val green: Int = 0, val blue: Int = 0)
         red <= 12 && green <= 13 && blue <= 14
 }
 
-private fun String.toGame(): Game =
-    Game(findNumOfCubes(redRegex), findNumOfCubes(greenRegex), findNumOfCubes(blueRegex))
+private fun String.toGame(): RgbGame =
+    RgbGame(findNumOfCubes(redRegex), findNumOfCubes(greenRegex), findNumOfCubes(blueRegex))
 
 private fun String.findNumOfCubes(regex: Regex): Int =
     regex.find(this)?.groupValues?.getOrNull(1)?.toInt() ?: 0
 
-private fun List<Game>.toMinimumSet(): Game =
-    Game(maxOf { it.red }, maxOf { it.green }, maxOf { it.blue })
+private fun List<RgbGame>.toMinimumSet(): RgbGame =
+    RgbGame(maxOf { it.red }, maxOf { it.green }, maxOf { it.blue })
 
 private val simpleInput = """
     Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
