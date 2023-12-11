@@ -5,7 +5,7 @@ fun main() {
     println(solvePart2(input.lines()))
 }
 
-val regex = """(?=(one|two|three|four|five|six|seven|eight|nine|[1-9]))""".toRegex()
+private val regex = """(?=(one|two|three|four|five|six|seven|eight|nine|[1-9]))""".toRegex()
 
 private fun solvePart1(lines: List<String>): Int =
     lines.sumOf { line -> "${line.first { it.isDigit() }}${line.last { it.isDigit() }}".toInt() }
