@@ -1,27 +1,23 @@
 fun main() {
     println(solvePart1(sampleInput1.toMap()))
     println(solvePart1(sampleInput2.toMap()))
+    println(solvePart1(sampleInput3.toMap()))
     println(solvePart1(input.toMap()))
 }
 
 private fun solvePart1(map: Map): Int {
-    val start = map.start
-    val distances = IntArray(4) { 0 }
-    var paths = listOf(
-        map.at(start.coordinates.up)?.let { ElementsPair(start, it) },
-        map.at(start.coordinates.right)?.let { ElementsPair(start, it) },
-        map.at(start.coordinates.down)?.let { ElementsPair(start, it) },
-        map.at(start.coordinates.left)?.let { ElementsPair(start, it) },
+    val paths = listOf(
+        Path(map).apply { goUp() },
+        Path(map).apply { goRight() },
+        Path(map).apply { goDown() },
+        Path(map).apply { goLeft() },
     )
-//    paths.forEachIndexed { index, elementsPair -> println("$index: $elementsPair") }
+
     while (!paths.haveReachedFinish()) {
-        paths.forEachIndexed { index, elementsPair -> if (elementsPair != null) distances[index]++ }
-//        println(distances.toList())
-//        println()
-        paths = paths.map { it?.next(map) }
-//        paths.forEachIndexed { index, elementsPair -> println("$index: $elementsPair") }
+        paths.onEach { path -> path.next() }
     }
-    return distances.max() + 1
+
+    return paths.maxOf { it.length } - 1
 }
 
 private fun String.toMap(): Map {
@@ -36,34 +32,14 @@ private fun String.toMap(): Map {
     return map
 }
 
-private fun List<ElementsPair?>.haveReachedFinish(): Boolean {
-    val (p0, p1, p2, p3) = map { it?.cur }
-    return (p0 == null || p0 == p1 || p0 == p2 || p0 == p3)
-        && (p1 == null || p1 == p0 || p1 == p2 || p1 == p3)
-        && (p2 == null || p2 == p0 || p2 == p1 || p2 == p3)
-        && (p3 == null || p3 == p0 || p3 == p1 || p3 == p2)
-}
-
+private fun List<Path>.haveReachedFinish(): Boolean =
+    mapNotNull { if (!it.isDeadEnd) it.last else null }.toSet().size == 1
 
 private enum class Movement {
     LEFT_TO_RIGHT,
     RIGHT_TO_LEFT,
     TOP_TO_BOTTOM,
     BOTTOM_TO_TOP
-}
-
-private data class ElementsPair(val prev: MapElement, val cur: MapElement) {
-    fun next(map: Map): ElementsPair? {
-        val movement = when {
-            prev.coordinates.x == cur.coordinates.x && prev.coordinates.y == cur.coordinates.y - 1 -> Movement.LEFT_TO_RIGHT
-            prev.coordinates.x == cur.coordinates.x && prev.coordinates.y == cur.coordinates.y + 1 -> Movement.RIGHT_TO_LEFT
-            prev.coordinates.x == cur.coordinates.x - 1 && prev.coordinates.y == cur.coordinates.y -> Movement.TOP_TO_BOTTOM
-            prev.coordinates.x == cur.coordinates.x + 1 && prev.coordinates.y == cur.coordinates.y -> Movement.BOTTOM_TO_TOP
-            else -> error("")
-        }
-
-        return cur.move(movement, map)?.let { next -> ElementsPair(cur, next) }
-    }
 }
 
 private data class Coordinates(val x: Int, val y: Int) {
@@ -135,6 +111,71 @@ private data class MapElement(val char: Char, val coordinates: Coordinates) {
         }
 }
 
+private class Path(private val map: Map) {
+    private val elements = mutableListOf(map.start)
+    val length: Int
+        get() = elements.size
+
+    val last: MapElement
+        get() = elements.last()
+
+    var isDeadEnd: Boolean = false
+
+    fun next() {
+        if (isDeadEnd) return
+        val curX = last.coordinates.x
+        val curY = last.coordinates.y
+        val prev = elements[elements.size - 2]
+        val prevX = prev.coordinates.x
+        val prevY = prev.coordinates.y
+
+        val movement = when {
+            prevX == curX && prevY == curY - 1 -> Movement.LEFT_TO_RIGHT
+            prevX == curX && prevY == curY + 1 -> Movement.RIGHT_TO_LEFT
+            prevX == curX - 1 && prevY == curY -> Movement.TOP_TO_BOTTOM
+            prevX == curX + 1 && prevY == curY -> Movement.BOTTOM_TO_TOP
+            else -> error("")
+        }
+
+        last.move(movement, map)
+            ?.let { next -> goTo(next.coordinates) }
+            ?: run { isDeadEnd = true }
+    }
+
+    fun goUp() {
+        if (!isDeadEnd) {
+            goTo(last.coordinates.up)
+        }
+    }
+
+    fun goDown() {
+        if (!isDeadEnd) {
+            goTo(last.coordinates.down)
+        }
+    }
+
+    fun goRight() {
+        if (!isDeadEnd) {
+            goTo(last.coordinates.right)
+        }
+    }
+
+    fun goLeft() {
+        if (!isDeadEnd) {
+            goTo(last.coordinates.left)
+        }
+    }
+
+    private fun goTo(coordinates: Coordinates) {
+        map.at(coordinates)
+            ?.let { elements.add(it) }
+            ?: run { isDeadEnd = true }
+    }
+
+    override fun toString(): String =
+        "Path ${System.identityHashCode(this)} current: $last all: $elements"
+}
+
 private class Map(private val map: Array<Array<MapElement>>) {
     private val numOrRows = map.size
     private val numOrColumns = map.first().size
@@ -166,6 +207,18 @@ private val sampleInput2 = """
     SJLL7
     |F--J
     LJ.LJ
+""".trimIndent()
+
+private val sampleInput3 = """
+    ...........
+    .S-------7.
+    .|F-----7|.
+    .||.....||.
+    .||.....||.
+    .|L-7.F-J|.
+    .|..|.|..|.
+    .L--J.L--J.
+    ...........
 """.trimIndent()
 
 private val input = """
