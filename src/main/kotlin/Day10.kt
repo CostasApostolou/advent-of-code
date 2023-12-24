@@ -1,23 +1,40 @@
 fun main() {
-    println(solvePart1(sampleInput1.toMap()))
-    println(solvePart1(sampleInput2.toMap()))
-    println(solvePart1(sampleInput3.toMap()))
-    println(solvePart1(input.toMap()))
+//    println(solvePart1(sampleInput1.toMap()))
+//    println(solvePart1(sampleInput2.toMap()))
+//    println(solvePart1(sampleInput3.toMap()))
+//    println(solvePart1(input.toMap()))
+
+    solvePart2(sampleInput1.toMap())
+    solvePart2(sampleInput2.toMap())
+    solvePart2(sampleInput3.toMap())
+    solvePart2(input.toMap())
 }
 
-private fun solvePart1(map: Map): Int {
+private fun solvePart1(map: Map): Int =
+    map.findPaths().maxOf { it.length } - 1
+
+private fun solvePart2(map: Map): Int {
+    map.draw()
+    println()
+    val paths = map.findPaths()
+    val newMap = paths.drawOnMap()
+    newMap.draw()
+    println()
+    return 0
+}
+
+private fun Map.findPaths(): List<Path> {
     val paths = listOf(
-        Path(map).apply { goUp() },
-        Path(map).apply { goRight() },
-        Path(map).apply { goDown() },
-        Path(map).apply { goLeft() },
+        Path(this).apply { goUp() },
+        Path(this).apply { goRight() },
+        Path(this).apply { goDown() },
+        Path(this).apply { goLeft() },
     )
 
     while (!paths.haveReachedFinish()) {
         paths.onEach { path -> path.next() }
     }
-
-    return paths.maxOf { it.length } - 1
+    return paths
 }
 
 private fun String.toMap(): Map {
@@ -34,6 +51,36 @@ private fun String.toMap(): Map {
 
 private fun List<Path>.haveReachedFinish(): Boolean =
     mapNotNull { if (!it.isDeadEnd) it.last else null }.toSet().size == 1
+
+private fun List<Path>.drawOnMap(): Map {
+    val max = maxOf { it.length }
+    val first = indexOfFirst { it.length == max }
+    val second = indexOfLast { it.length == max }
+    val startChar = when {
+        first == 0 && second == 1 -> 'L'
+        first == 0 && second == 2 -> '|'
+        first == 0 && second == 3 -> 'J'
+        first == 1 && second == 2 -> 'F'
+        first == 1 && second == 3 -> '-'
+        first == 2 && second == 3 -> '7'
+        else -> error("failed to get start shape")
+    }
+    val oldMap = this.first().map
+    val tt = (0..<oldMap.numOrRows).map { x ->
+        (0..<oldMap.numOrColumns).map { y ->
+            MapElement('.', Coordinates(x, y))
+        }.toTypedArray()
+    }.toTypedArray()
+    val newMap = Map(tt)
+    newMap.update(this[first].elements)
+    newMap.update(this[second].elements)
+    newMap.updateAt(oldMap.start.coordinates, startChar)
+    return newMap
+}
+
+private fun Map.update(elements: List<MapElement>) {
+    elements.forEach { elem -> updateAt(elem.coordinates, elem.char) }
+}
 
 private enum class Movement {
     LEFT_TO_RIGHT,
@@ -111,8 +158,8 @@ private data class MapElement(val char: Char, val coordinates: Coordinates) {
         }
 }
 
-private class Path(private val map: Map) {
-    private val elements = mutableListOf(map.start)
+private class Path(val map: Map) {
+    val elements = mutableListOf(map.start)
     val length: Int
         get() = elements.size
 
@@ -177,8 +224,8 @@ private class Path(private val map: Map) {
 }
 
 private class Map(private val map: Array<Array<MapElement>>) {
-    private val numOrRows = map.size
-    private val numOrColumns = map.first().size
+    val numOrRows = map.size
+    val numOrColumns = map.first().size
 
     val start: MapElement
         get() = map
@@ -191,6 +238,15 @@ private class Map(private val map: Array<Array<MapElement>>) {
         } else {
             null
         }
+
+    fun updateAt(coordinates: Coordinates, newChar: Char) {
+        val (x, y) = coordinates
+        map[x][y] = MapElement(newChar, coordinates)
+    }
+
+    fun draw(){
+        map.indices.forEach { row -> println(map[row].map { it.char }.joinToString("")) }
+    }
 }
 
 private val sampleInput1 = """
