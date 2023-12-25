@@ -1,23 +1,30 @@
-import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 fun main() {
     println(solvePart1(sampleInput))
     println(solvePart1(input))
+
+    println(solve(sampleInput, 10))
+    println(solve(sampleInput, 100))
+    println(solvePart2(input))
 }
 
-private fun solvePart1(input: String): Int {
-    val cosmos = Cosmos.create(input)
+private fun solvePart1(input: String): Long = solve(input, 2)
+private fun solvePart2(input: String): Long = solve(input, 1_000_000)
+
+private fun solve(input: String, dilation: Long): Long {
+    val cosmos = Cosmos.create(input, dilation)
     cosmos.expand()
-    cosmos.enumerate()
+    cosmos.locateGalaxies()
     return cosmos.sumAllDistances()
 }
 
-private data class XY(val x: Int, val y: Int){
-    fun distanceFrom(other: XY): Int =
-        abs(x - other.x) + abs(y - other.y)
-}
-private class Cosmos private constructor(private val rows: List<List<String>>) {
-    private val backingField = rows.map { it.toMutableList() }.toMutableList()
+private data class XY(val x: Int, val y: Int)
+
+private class Cosmos private constructor(private val rows: List<List<String>>, private val dilation: Long) {
+    private val emptyLinesIndexes = mutableListOf<Int>()
+    private val emptyColumnsIndexes = mutableListOf<Int>()
     private val galaxiesLocations = mutableListOf<XY>()
 
     fun expand() {
@@ -25,66 +32,66 @@ private class Cosmos private constructor(private val rows: List<List<String>>) {
         expandColumns()
     }
 
-    fun enumerate() {
-        var num = 1
-        backingField.onEachIndexed { x, row ->
+    fun locateGalaxies() {
+        rows.onEachIndexed { x, row ->
             row.onEachIndexed { y, element ->
                 if (element == "#") {
                     galaxiesLocations.add(XY(x, y))
-                    row[y] = num.toString()
-                    num++
                 }
             }
         }
     }
 
-    fun sumAllDistances(): Int =
+    fun sumAllDistances(): Long =
         galaxiesLocations.mapIndexed { currentIndex, galaxy ->
-            galaxiesLocations.mapIndexed { otherIndex, it ->
+            galaxiesLocations.mapIndexed { otherIndex, otherGalaxy ->
                 if (otherIndex > currentIndex) {
-                    galaxy.distanceFrom(it)
+                    distanceBetween(galaxy, otherGalaxy)
                 } else {
                     0
                 }
             }
         }.sumOf { it.sum() }
 
+    private fun distanceBetween(g1: XY, g2: XY): Long {
+        val minX = min(g1.x, g2.x)
+        val maxX = max(g1.x, g2.x)
+        val minY = min(g1.y, g2.y)
+        val maxY = max(g1.y, g2.y)
+
+        val xDilations = emptyLinesIndexes.count { index -> index in minX..maxX }
+        val yDilations = emptyColumnsIndexes.count { index -> index in minY..maxY }
+
+        val xDist = maxX - minX - xDilations + dilation * xDilations
+        val yDist = maxY - minY - yDilations + dilation * yDilations
+
+        return xDist + yDist
+
+    }
+
     private fun expandRows() {
-        val emptyLinesIndexes = rows
+        emptyLinesIndexes.addAll(rows
             .mapIndexed { index, chars ->
                 index to chars.takeUnless { row -> row.any { it != "." } }
             }
             .filter { it.second != null }
             .map { it.first }
-        val emptyLine = List(rows.first().size) { "." }
-        emptyLinesIndexes.reversed().forEach { backingField.add(it + 1, emptyLine.toMutableList()) }
+        )
     }
 
     private fun expandColumns() {
-        val emptyColumnsIndexes = (0..<rows.first().size)
+        emptyColumnsIndexes.addAll((0..<rows.first().size)
             .map { column ->
                 column to rows.map { it[column] }.takeUnless { it.any { it != "." } }
             }
             .filter { it.second != null }
             .map { it.first }
-        backingField.forEachIndexed { i, row ->
-            emptyColumnsIndexes.reversed().forEach { index -> row.add(index + 1, ".") }
-        }
-    }
-
-    fun drawCosmos(withNums: Boolean = false) {
-        backingField.forEachIndexed { index, row ->
-            println("row $index ${row.mapIndexed { i, c -> if (c == "." && withNums) i else c }}")
-        }
-    }
-
-    override fun toString(): String {
-        return backingField.joinToString("\n") { it.joinToString("") }
+        )
     }
 
     companion object {
-        fun create(input: String): Cosmos =
-            Cosmos(input.lines().map { line -> line.map { it.toString() } })
+        fun create(input: String, dilation: Long = 1): Cosmos =
+            Cosmos(input.lines().map { line -> line.map { it.toString() } }, dilation)
     }
 }
 
