@@ -91,7 +91,7 @@ private class Cosmos private constructor(private val rows: List<List<String>>, p
 
     companion object {
         fun create(input: String, dilation: Long = 1): Cosmos =
-            Cosmos(input.lines().map { line -> line.map { it.toString() } }, dilation)
+            Cosmos(input.toTwoDimensionalMatrix(), dilation)
     }
 }
 

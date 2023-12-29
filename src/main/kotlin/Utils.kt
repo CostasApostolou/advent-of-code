@@ -4,3 +4,10 @@ fun <T> List<List<T>>.transposed(): List<List<T>> =
     } else {
         error("Malformed matrix")
     }
+
+fun <T> List<List<T>>.draw() {
+    indices.forEach { row -> println(this[row].joinToString("") { it.toString() }) }
+}
+
+fun String.toTwoDimensionalMatrix(): List<List<String>> =
+    lines().map { line -> line.map { it.toString() } }

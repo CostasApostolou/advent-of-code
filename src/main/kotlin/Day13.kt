@@ -42,13 +42,9 @@ private data class Map13(val map: List<List<String>>) {
         return linesBeforeLineOfSymmetry
     }
 
-    fun draw() {
-        map.indices.forEach { row -> println(map[row].joinToString("")) }
-    }
-
     companion object {
         fun create(input: String) =
-            Map13(input.lines().map { line -> line.map { it.toString() } })
+            Map13(input.toTwoDimensionalMatrix())
     }
 }
 
