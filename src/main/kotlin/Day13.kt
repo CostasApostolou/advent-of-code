@@ -9,27 +9,21 @@ fun main() {
     println(solvePart2(input))
 }
 
-private fun solvePart1(input: String): Int {
-    val maps = createMaps(input)
-    val verticalScores = maps.mapNotNull { it.verticalSymmetryScore() }.sum()
-    val horizontalScores = maps.mapNotNull { it.horizontalSymmetryScore() }.sum()
-    return verticalScores + horizontalScores
-}
+private fun solvePart1(input: String): Int =
+    createMaps(input).sumOf { max(it.verticalSymmetryScore(), it.horizontalSymmetryScore()) }
 
-private fun solvePart2(input: String): Int {
-    val maps = createMaps(input)
-    return maps.sumOf { max(it.horizontalSymmetryScoreWithSmudge(), it.verticalSymmetryScoreWithSmudge()) }
-}
+private fun solvePart2(input: String): Int =
+    createMaps(input).sumOf { max(it.horizontalSymmetryScoreWithSmudge(), it.verticalSymmetryScoreWithSmudge()) }
 private data class Map13(val map: List<List<String>>) {
 
-    fun verticalSymmetryScore(): Int? =
-        findSymmetry(map.transposed()).takeUnless { it == -1 }
+    fun verticalSymmetryScore(): Int =
+        findSymmetry(map.transposed())
 
     fun verticalSymmetryScoreWithSmudge(): Int =
         findSymmetryWithSmudge(map.transposed())
 
-    fun horizontalSymmetryScore(): Int? =
-        findSymmetry(map).takeUnless { it == -1 }?.times(100)
+    fun horizontalSymmetryScore(): Int =
+        findSymmetry(map).times(100)
 
     fun horizontalSymmetryScoreWithSmudge(): Int =
         findSymmetryWithSmudge(map).times(100)
