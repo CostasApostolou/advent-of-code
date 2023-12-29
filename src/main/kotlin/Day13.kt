@@ -1,24 +1,38 @@
+import kotlin.math.max
 import kotlin.math.min
 
 fun main() {
     println(solvePart1(sampleInput))
     println(solvePart1(input))
+
+    println(solvePart2(sampleInput))
+    println(solvePart2(input))
 }
 
-private fun solvePart1(input: String): Int{
+private fun solvePart1(input: String): Int {
     val maps = createMaps(input)
     val verticalScores = maps.mapNotNull { it.verticalSymmetryScore() }.sum()
     val horizontalScores = maps.mapNotNull { it.horizontalSymmetryScore() }.sum()
     return verticalScores + horizontalScores
 }
 
+private fun solvePart2(input: String): Int {
+    val maps = createMaps(input)
+    return maps.sumOf { max(it.horizontalSymmetryScoreWithSmudge(), it.verticalSymmetryScoreWithSmudge()) }
+}
 private data class Map13(val map: List<List<String>>) {
 
     fun verticalSymmetryScore(): Int? =
         findSymmetry(map.transposed()).takeUnless { it == -1 }
 
+    fun verticalSymmetryScoreWithSmudge(): Int =
+        findSymmetryWithSmudge(map.transposed())
+
     fun horizontalSymmetryScore(): Int? =
         findSymmetry(map).takeUnless { it == -1 }?.times(100)
+
+    fun horizontalSymmetryScoreWithSmudge(): Int =
+        findSymmetryWithSmudge(map).times(100)
 
     private fun findSymmetry(collection: List<List<String>>): Int {
         var linesBeforeLineOfSymmetry = -1
@@ -26,7 +40,7 @@ private data class Map13(val map: List<List<String>>) {
             .indices
             .windowed(2)
             .mapNotNull { (first, second) ->
-                if (collection[first] == collection[second]){
+                if (collection[first] == collection[second]) {
                     first to second
                 } else {
                     null
@@ -34,13 +48,53 @@ private data class Map13(val map: List<List<String>>) {
             }
             .forEach { (first, second) ->
                 val num = min(collection.size - second, second)
-                val isReflection = (0 ..< num).all { index ->
+                val isReflection = (0..<num).all { index ->
                     collection[first - index] == collection[second + index]
                 }
                 if (isReflection) linesBeforeLineOfSymmetry = second
             }
         return linesBeforeLineOfSymmetry
     }
+
+    private fun findSymmetryWithSmudge(collection: List<List<String>>): Int {
+        var linesBeforeLineOfSymmetry = -1
+        collection
+            .indices
+            .windowed(2)
+            .mapNotNull { (first, second) ->
+                val l1 = collection[first]
+                val l2 = collection[second]
+                if (l1 == l2 || l1.differByOneElementWith(l2)) {
+                    first to second
+                } else {
+                    null
+                }
+            }
+            .forEach { (first, second) ->
+                val num = min(collection.size - second, second)
+                var smudgeUsed = false
+                val res = (0..<num).map { index ->
+                    val l1 = collection[first - index]
+                    val l2 = collection[second + index]
+                    when {
+                        l1 == l2 -> true
+                        !smudgeUsed -> {
+                            smudgeUsed = l1.differByOneElementWith(l2)
+                            smudgeUsed
+                        }
+                        else -> false
+                    }
+                }
+                if (res.all { it } && smudgeUsed) linesBeforeLineOfSymmetry = second
+            }
+        return linesBeforeLineOfSymmetry
+    }
+
+    private fun List<String>.differByOneElementWith(other: List<String>): Boolean =
+        zip(other)
+            .mapIndexed { index, (e1, e2) -> if (e1 != e2) index else null }
+            .filterNotNull()
+            .singleOrNull() != null
 
     companion object {
         fun create(input: String) =
