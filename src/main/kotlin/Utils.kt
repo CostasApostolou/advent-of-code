@@ -11,3 +11,9 @@ fun <T> List<List<T>>.draw() {
 
 fun String.toTwoDimensionalMatrix(): List<List<String>> =
     lines().map { line -> line.map { it.toString() } }
+
+fun <T> List<T>.findIndicesOf(elem: T): List<Int> =
+    mapIndexed { index, t -> if (t == elem) index else null }.filterNotNull()
+
+fun sumBetween(from: Int, to: Int): Int =
+    (to * (to + 1) - from * (from - 1)) / 2
