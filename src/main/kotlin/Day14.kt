@@ -1,25 +1,86 @@
 fun main() {
     println(solvePart1(sampleInput))
     println(solvePart1(input))
+    println(solvePart2(sampleInput))
+    println(solvePart2(input))
 }
 
 private fun solvePart1(input: String): Int =
     input
         .toTwoDimensionalMatrix()
-        .transposed()
-        .sumOf { it.calcTotalLoad() }
+        .originalToNorth()
+        .roll()
+        .calcTotalLoad()
 
-private fun List<String>.calcTotalLoad(): Int {
-    val newList = listOf("#") + this + listOf("#")
-    return newList
-        .findIndicesOf("#")
-        .windowed(2)
-        .sumOf { (from, to) ->
-            val zeroes = newList.subList(from, to).count { it == "O" }
-            val n = size
-            if (zeroes != 0) sumBetween(n - from - zeroes + 1, n - from) else 0
+private fun solvePart2(input: String, cycles: Int = 1000000000): Int {
+    val set = mutableSetOf<List<List<String>>>()
+    var loopStart = -1
+    var loopEnd = -1
+    val original = input.toTwoDimensionalMatrix()
+    var matrix = original
+    set.add(matrix)
+    for (counter in 1..cycles) {
+        matrix = matrix.cycle()
+        if (!set.add(matrix)) {
+            loopStart = set.indexOf(matrix)
+            loopEnd = counter - 1
+            break
         }
+    }
+    val loopSize = loopEnd - loopStart + 1
+    val mod = (cycles - loopStart) % loopSize
+    matrix = set.elementAt(loopStart)
+    for (counter in 1.. mod) {
+        matrix = matrix.cycle()
+    }
+
+    return matrix.originalToNorth().calcTotalLoad()
 }
+private fun List<List<String>>.calcTotalLoad(): Int =
+    sumOf { it.calcRowTotalLoad() }
+
+private fun List<String>.calcRowTotalLoad(): Int =
+    mapIndexed { index, s -> if (s == "O") this.size - index else 0}.sum()
+
+private fun List<String>.rollRow(): List<String> {
+    val newList = listOf("#") + this + listOf("#")
+    return buildString {
+        newList
+            .findIndicesOf("#")
+            .windowed(2)
+            .forEach { (from, to) ->
+                val zeroes = newList.subList(from, to).count { it == "O" }
+                val subListSize = to - from - 1
+                append("O".repeat(zeroes))
+                append(".".repeat(subListSize - zeroes))
+                append("#")
+            }
+    }
+        .map { it.toString() }
+        .dropLast(1)
+}
+
+private fun List<List<String>>.roll(): List<List<String>> =
+    map { it.rollRow() }
+
+private fun List<List<String>>.originalToNorth(): List<List<String>> = transposed()
+private fun List<List<String>>.northToWest(): List<List<String>> = transposed()
+private fun List<List<String>>.westToSouth(): List<List<String>> = transposed().reversedRows()
+private fun List<List<String>>.southToEast(): List<List<String>> = reversedRows().transposed().reversedRows()
+private fun List<List<String>>.eastToOriginal(): List<List<String>> = reversedRows()
+
+private fun List<List<String>>.reversedRows(): List<List<String>> = map { it.reversed() }
+
+private fun List<List<String>>.cycle(): List<List<String>> =
+    originalToNorth()
+        .roll()
+        .northToWest()
+        .roll()
+        .westToSouth()
+        .roll()
+        .southToEast()
+        .roll()
+        .eastToOriginal()
 
 private val sampleInput = """
     O....#....
